@@ -1,0 +1,45 @@
+#!/bin/bash
+set -eo pipefail
+
+uname_output="$(uname -s)"
+case "${uname_output}" in
+Linux*) machine=Linux ;;
+Darwin*) machine=Mac ;;
+CYGWIN*) machine=Windows ;;
+MINGW*) machine=Windows ;;
+MSYS*) machine=Windows ;;
+*) echo "Unknown system '${uname_output}'" && exit 1 ;;
+esac
+
+src_file=$1
+exe_file=$(basename "${src_file%.*}")
+
+if [[ "$machine" == "Windows" ]]; then
+  exe_file=$(basename "${src_file%.*}".exe)
+fi
+
+if [[ -z "$src_file" ]]; then
+  echo "Must provide \$1 for compile"
+  exit 1
+fi
+
+if [[ -z "$INCLUDE" ]]; then
+  echo "Must provide INCLUDE in environment"
+  exit 1
+fi
+
+rm -f "$exe_file"
+
+echo "Compiling $src_file, running:" g++ -I"${INCLUDE}" -o"$exe_file" -O2 -Wextra -Wall -Wconversion "$src_file"
+g++ -I"${INCLUDE}" -o"$exe_file" -O2 -Wextra -Wall -Wconversion "$src_file"
+
+if [ ! -f "$exe_file" ]; then
+  echo "Compilation failed: file $exe_file not found"
+  exit 1
+fi
+
+echo "[SUCCESS] $src_file compiled"
+
+if [[ "$2" == "--check-only" ]]; then
+  rm -rf "$exe_file"
+fi
